@@ -1,0 +1,7 @@
+20-169-223-219.sslip.io {
+	reverse_proxy api:3080
+}
+
+http://20.169.223.219 {
+	redir https://20-169-223-219.sslip.io{uri} permanent
+}

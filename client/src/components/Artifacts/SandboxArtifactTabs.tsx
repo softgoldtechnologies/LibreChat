@@ -6,9 +6,30 @@ import type { Artifact } from '~/common';
 import { useGetSharedStartupConfig, useGetStartupConfig } from '~/data-provider';
 import useArtifactProps from '~/hooks/Artifacts/useArtifactProps';
 import { useArtifactCode } from '~/Providers/EditorContext';
+import { TOOL_ARTIFACT_TYPES } from '~/utils/artifacts';
 import { ArtifactCodeEditor } from './ArtifactCodeEditor';
 import { ArtifactPreview } from './ArtifactPreview';
 import { useShareContext } from '~/Providers';
+
+const OFFICE_PREVIEW_TYPES = new Set<string>([
+  TOOL_ARTIFACT_TYPES.DOCX,
+  TOOL_ARTIFACT_TYPES.SPREADSHEET,
+  TOOL_ARTIFACT_TYPES.PRESENTATION,
+]);
+
+/** Sandpack's static preview loads through a third-party frame. Office HTML is
+ * already a complete document, so render it here and skip that frame. */
+function officePreviewDocument(files: Record<string, unknown>): string {
+  const entry = files['index.html'];
+  if (typeof entry === 'string') {
+    return entry;
+  }
+  if (entry != null && typeof entry === 'object' && 'code' in entry) {
+    const code = (entry as { code?: unknown }).code;
+    return typeof code === 'string' ? code : '';
+  }
+  return '';
+}
 
 export default function SandboxArtifactTabs({
   artifact,
@@ -43,6 +64,9 @@ export default function SandboxArtifactTabs({
     () => (deriveFiles != null && editedCode ? deriveFiles(editedCode) : files),
     [deriveFiles, editedCode, files],
   );
+  const officeSrcDoc = OFFICE_PREVIEW_TYPES.has(artifact.type ?? '')
+    ? officePreviewDocument(previewFiles as Record<string, unknown>)
+    : '';
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -60,15 +84,24 @@ export default function SandboxArtifactTabs({
       </Tabs.Content>
 
       <Tabs.Content value="preview" className="h-full w-full grow overflow-hidden" tabIndex={-1}>
-        <ArtifactPreview
-          files={previewFiles}
-          fileKey={fileKey}
-          template={template}
-          previewRef={previewRef}
-          sharedProps={sharedProps}
-          currentCode={editedCode}
-          startupConfig={resolvedStartupConfig}
-        />
+        {officeSrcDoc ? (
+          <iframe
+            title={artifact.title ?? 'Document preview'}
+            sandbox="allow-scripts allow-popups allow-downloads"
+            srcDoc={officeSrcDoc}
+            className="h-full w-full border-0 bg-white"
+          />
+        ) : (
+          <ArtifactPreview
+            files={previewFiles}
+            fileKey={fileKey}
+            template={template}
+            previewRef={previewRef}
+            sharedProps={sharedProps}
+            currentCode={editedCode}
+            startupConfig={resolvedStartupConfig}
+          />
+        )}
       </Tabs.Content>
     </div>
   );

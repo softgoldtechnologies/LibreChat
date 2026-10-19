@@ -1,0 +1,39 @@
+services:
+  api:
+    ports: !reset []
+    volumes:
+      - ./librechat.yaml:/app/librechat.yaml:ro
+      - ./runtime-preview/index.html:/app/client/dist/index.html:ro
+      - ./runtime-preview/office-preview.js:/app/client/dist/office-preview.js:ro
+      - ./runtime-preview/sw.js:/app/client/dist/sw.js:ro
+    networks:
+      default:
+      codeapi-shared:
+  rag_api:
+    environment:
+      RAG_OPENAI_API_KEY: ${OPENROUTER_KEY}
+      RAG_OPENAI_BASEURL: https://openrouter.ai/api/v1
+      EMBEDDINGS_PROVIDER: openai
+      EMBEDDINGS_MODEL: openai/text-embedding-3-small
+  caddy:
+    image: caddy:2-alpine
+    container_name: librechat-caddy
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  codeapi-shared:
+    external: true
+    name: librechat-codeapi
