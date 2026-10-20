@@ -1,0 +1,66 @@
+services:
+  api:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-api:main
+    pull_policy: missing
+    restart: unless-stopped
+    container_name: codeapi-api
+    ports: !override
+      - "127.0.0.1:3112:3112"
+    networks:
+      default:
+      codeapi-shared:
+
+  service-worker:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-worker:main
+    pull_policy: missing
+    restart: unless-stopped
+
+  file_server:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-file-server:main
+    pull_policy: missing
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:13000:3000"
+
+  egress_gateway:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-egress-gateway:main
+    pull_policy: missing
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:3190:3190"
+
+  tool_call_server:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-tool-call-server:main
+    pull_policy: missing
+    restart: unless-stopped
+
+  sandbox-runner:
+    build: !reset null
+    image: ghcr.io/librechat-ai/code-interpreter-sandbox-runner:main
+    pull_policy: missing
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:2000:2000"
+
+  redis:
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:16379:6379"
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    pull_policy: missing
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:19000:9000"
+      - "127.0.0.1:19001:9001"
+
+networks:
+  codeapi-shared:
+    external: true
+    name: librechat-codeapi
